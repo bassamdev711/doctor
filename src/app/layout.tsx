@@ -17,9 +17,9 @@ export const metadata: Metadata = {
     siteName: "عيادة د. ليان",
     locale: "ar_SA",
     type: "website",
-    images: [{ url: "/hero-porcelain.jpg", width: 2560, height: 1440, alt: "تفصيل خزفي مستوحى من طب الأسنان" }],
+    images: [{ url: "/hero-porcelain-left.png", width: 2560, height: 1440, alt: "تفصيل خزفي مستوحى من طب الأسنان" }],
   },
-  twitter: { card: "summary_large_image", title: "د. ليان | طب أسنان دقيق، ابتسامة تشبهك", description: "عناية هادئة ونتائج طبيعية في عيادة د. ليان بالرياض.", images: ["/hero-porcelain.jpg"] },
+  twitter: { card: "summary_large_image", title: "د. ليان | طب أسنان دقيق، ابتسامة تشبهك", description: "عناية هادئة ونتائج طبيعية في عيادة د. ليان بالرياض.", images: ["/hero-porcelain-left.png"] },
   robots: { index: true, follow: true },
 };
 
@@ -32,7 +32,7 @@ const structuredData = {
   telephone: "+966112345678",
   address: { "@type": "PostalAddress", addressLocality: "الرياض", addressCountry: "SA" },
   medicalSpecialty: "Dentistry",
-  image: "https://dr-layan.com/hero-porcelain.jpg",
+  image: "https://dr-layan.com/hero-porcelain-left.png",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
