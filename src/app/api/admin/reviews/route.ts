@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { createReview } from "@/lib/db";
 import { reviewSchema } from "@/lib/validation";
+import { adminMutationGuard } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  const guard = adminMutationGuard(request, "reviews-write");
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const review = reviewSchema.parse(await request.json());

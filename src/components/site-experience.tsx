@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 type Service = {
   id?: number;
@@ -79,6 +79,13 @@ export default function SiteExperience() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [beforeAfter, setBeforeAfter] = useState(52);
+  const bookingRequestId = useRef("");
+  const reviewRequestId = useRef("");
+
+  const ensureRequestId = (ref: { current: string }) => {
+    if (!ref.current) ref.current = crypto.randomUUID();
+    return ref.current;
+  };
 
   const handleHeroPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -131,24 +138,29 @@ export default function SiteExperience() {
 
   const handleBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
     setFormError("");
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const requestId = ensureRequestId(bookingRequestId);
     try {
       const response = await fetch("/api/bookings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": requestId },
         body: JSON.stringify({
           name: formData.get("name"),
           phone: formData.get("phone"),
           service: formData.get("service"),
           preferredDate: formData.get("date"),
+          requestId,
+          website: formData.get("website"),
         }),
       });
       const payload = await response.json() as { error?: string };
       if (!response.ok) throw new Error(payload.error || "تعذر تسجيل الطلب.");
       form.reset();
+      bookingRequestId.current = "";
       setSubmitted(true);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "تعذر تسجيل الطلب الآن.");
@@ -166,25 +178,30 @@ export default function SiteExperience() {
 
   const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (reviewSubmitting) return;
     setReviewSubmitting(true);
     setReviewError("");
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const requestId = ensureRequestId(reviewRequestId);
     try {
       const response = await fetch("/api/reviews", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": requestId },
         body: JSON.stringify({
           author_name: formData.get("review-author"),
           service_name: formData.get("review-service"),
           content: formData.get("review-content"),
           rating: Number(formData.get("review-rating")),
           consent: formData.get("review-consent") === "on",
+          requestId,
+          website: formData.get("website"),
         }),
       });
       const payload = await response.json() as { error?: string };
       if (!response.ok) throw new Error(payload.error || "تعذر إرسال المراجعة.");
       form.reset();
+      reviewRequestId.current = "";
       setReviewSubmitted(true);
     } catch (error) {
       setReviewError(error instanceof Error ? error.message : "تعذر إرسال المراجعة الآن.");
@@ -236,9 +253,9 @@ export default function SiteExperience() {
 
       <footer className="site-footer page-width"><a className="brand-mark" href="#top"><span className="brand-symbol"><span /></span><span className="brand-copy"><strong>د. ليان</strong><small>عيادة أسنان</small></span></a><div className="footer-links">{navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</div><div className="footer-contact"><span>الرياض، المملكة العربية السعودية</span><a href="mailto:hello@dr-layan.com">hello@dr-layan.com</a></div><div className="footer-bottom"><span>© 2026 عيادة د. ليان. جميع الحقوق محفوظة.</span><span>Precision meets beauty.</span></div></footer>
 
-      {bookingOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setBookingOpen(false); }}><div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title"><button className="modal-close" onClick={() => setBookingOpen(false)} aria-label="إغلاق نموذج الحجز">×</button>{submitted ? <div className="success-state"><div className="success-icon">✓</div><h2>وصل طلبك.</h2><p>شكرًا لثقتك. سيتواصل معك فريق العيادة خلال ساعات العمل لتأكيد الموعد.</p><button className="primary-button" onClick={() => setBookingOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="10">حجز موعد</SectionEyebrow><h2 id="booking-title">لنبدأ<br /><em>منك.</em></h2><p className="modal-intro">املأ البيانات التالية وسنعاود الاتصال بك لتأكيد الوقت الأنسب.</p><form onSubmit={handleBooking} className="booking-form"><label>الاسم الكامل<input required name="name" placeholder="اكتب اسمك" /></label><label>رقم الهاتف<input required name="phone" type="tel" placeholder="05x xxx xxxx" /></label><label>الخدمة<select required name="service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>الوقت المفضل<input required name="date" type="date" min={new Date().toISOString().slice(0, 10)} /></label>{formError && <p className="form-error" role="alert">{formError}</p>}<button disabled={submitting} type="submit" className="primary-button form-submit">{submitting ? "جارٍ إرسال الطلب..." : "إرسال الطلب"} <ArrowIcon /></button></form></>}</div></div>}
+      {bookingOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setBookingOpen(false); }}><div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title"><button className="modal-close" onClick={() => setBookingOpen(false)} aria-label="إغلاق نموذج الحجز">×</button>{submitted ? <div className="success-state"><div className="success-icon">✓</div><h2>وصل طلبك.</h2><p>شكرًا لثقتك. سيتواصل معك فريق العيادة خلال ساعات العمل لتأكيد الموعد.</p><button className="primary-button" onClick={() => setBookingOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="10">حجز موعد</SectionEyebrow><h2 id="booking-title">لنبدأ<br /><em>منك.</em></h2><p className="modal-intro">املأ البيانات التالية وسنعاود الاتصال بك لتأكيد الوقت الأنسب.</p><form onSubmit={handleBooking} className="booking-form"><input className="honeypot-field" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>الاسم الكامل<input required name="name" placeholder="اكتب اسمك" /></label><label>رقم الهاتف<input required name="phone" type="tel" placeholder="05x xxx xxxx" /></label><label>الخدمة<select required name="service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>الوقت المفضل<input required name="date" type="date" min={new Date().toISOString().slice(0, 10)} /></label>{formError && <p className="form-error" role="alert">{formError}</p>}<button disabled={submitting} type="submit" className="primary-button form-submit">{submitting ? "جارٍ إرسال الطلب..." : "إرسال الطلب"} <ArrowIcon /></button></form></>}</div></div>}
 
-      {reviewOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setReviewOpen(false); }}><div className="booking-modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="إغلاق نموذج المراجعة">×</button>{reviewSubmitted ? <div className="success-state"><div className="success-icon">✓</div><h2>شكرًا لتجربتك.</h2><p>وصلت مراجعتك إلى فريق العيادة، وستبقى معلقة حتى يراجعها الدكتور قبل نشرها.</p><button className="primary-button" onClick={() => setReviewOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="08">مراجعة آمنة</SectionEyebrow><h2 id="review-title">رأيك<br /><em>يهمنا.</em></h2><p className="modal-intro">شارك تجربتك بصدق. لن تظهر المراجعة للزوار إلا بعد مراجعتها واعتمادها من الدكتور.</p><form onSubmit={handleReviewSubmit} className="booking-form review-form"><label>الاسم أو الأحرف الأولى<input required name="review-author" placeholder="مثال: سارة م." /></label><label>الخدمة<select required name="review-service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>تقييمك<select required name="review-rating" defaultValue="5"><option value="5">5 من 5</option><option value="4">4 من 5</option><option value="3">3 من 5</option><option value="2">2 من 5</option><option value="1">1 من 5</option></select></label><label>تجربتك<textarea required name="review-content" minLength={20} maxLength={800} rows={5} placeholder="اكتب تجربتك مع العيادة"></textarea></label><label className="consent-field"><input required type="checkbox" name="review-consent" /><span>أوافق على إرسال هذه المراجعة إلى العيادة لمراجعتها، وأفهم أنها لن تُنشر إلا بعد اعتماد الدكتور.</span></label>{reviewError && <p className="form-error" role="alert">{reviewError}</p>}<button disabled={reviewSubmitting} type="submit" className="primary-button form-submit">{reviewSubmitting ? "جارٍ إرسال المراجعة..." : "إرسال للمراجعة"} <ArrowIcon /></button></form></>}</div></div>}
+      {reviewOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setReviewOpen(false); }}><div className="booking-modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="إغلاق نموذج المراجعة">×</button>{reviewSubmitted ? <div className="success-state"><div className="success-icon">✓</div><h2>شكرًا لتجربتك.</h2><p>وصلت مراجعتك إلى فريق العيادة، وستبقى معلقة حتى يراجعها الدكتور قبل نشرها.</p><button className="primary-button" onClick={() => setReviewOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="08">مراجعة آمنة</SectionEyebrow><h2 id="review-title">رأيك<br /><em>يهمنا.</em></h2><p className="modal-intro">شارك تجربتك بصدق. لن تظهر المراجعة للزوار إلا بعد مراجعتها واعتمادها من الدكتور.</p><form onSubmit={handleReviewSubmit} className="booking-form review-form"><input className="honeypot-field" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>الاسم أو الأحرف الأولى<input required name="review-author" placeholder="مثال: سارة م." /></label><label>الخدمة<select required name="review-service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>تقييمك<select required name="review-rating" defaultValue="5"><option value="5">5 من 5</option><option value="4">4 من 5</option><option value="3">3 من 5</option><option value="2">2 من 5</option><option value="1">1 من 5</option></select></label><label>تجربتك<textarea required name="review-content" minLength={20} maxLength={800} rows={5} placeholder="اكتب تجربتك مع العيادة"></textarea></label><label className="consent-field"><input required type="checkbox" name="review-consent" /><span>أوافق على إرسال هذه المراجعة إلى العيادة لمراجعتها، وأفهم أنها لن تُنشر إلا بعد اعتماد الدكتور.</span></label>{reviewError && <p className="form-error" role="alert">{reviewError}</p>}<button disabled={reviewSubmitting} type="submit" className="primary-button form-submit">{reviewSubmitting ? "جارٍ إرسال المراجعة..." : "إرسال للمراجعة"} <ArrowIcon /></button></form></>}</div></div>}
     </main>
   );
 }

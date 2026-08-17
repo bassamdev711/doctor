@@ -9,6 +9,8 @@ export const bookingSchema = z.object({
   service: z.string().trim().min(2).max(120),
   preferredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   notes: z.string().trim().max(1000).optional(),
+  requestId: z.string().trim().max(120).regex(/^[a-zA-Z0-9._:-]+$/).optional(),
+  website: z.string().max(0).optional(),
 });
 
 export const serviceSchema = z.object({
@@ -59,6 +61,8 @@ export const publicReviewSchema = z.object({
   service_name: z.string().trim().min(2, "اختر الخدمة التي تلقيتها.").max(120),
   rating: z.coerce.number().int().min(1).max(5),
   consent: z.literal(true, { message: "يجب تأكيد موافقتك على معالجة المراجعة." }),
+  requestId: z.string().trim().max(120).regex(/^[a-zA-Z0-9._:-]+$/).optional(),
+  website: z.string().max(0).optional(),
 });
 
 export const reviewModerationSchema = z.object({

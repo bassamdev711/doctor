@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { createService } from "@/lib/db";
 import { serviceSchema } from "@/lib/validation";
+import { adminMutationGuard } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  const guard = adminMutationGuard(request, "services-write");
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const service = serviceSchema.parse(await request.json());

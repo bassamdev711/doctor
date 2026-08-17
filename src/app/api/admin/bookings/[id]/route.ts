@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { updateBookingStatus } from "@/lib/db";
 import { bookingStatusSchema } from "@/lib/validation";
+import { adminMutationGuard } from "@/lib/request-security";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  const guard = adminMutationGuard(request, "bookings-write");
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const { id } = await context.params;

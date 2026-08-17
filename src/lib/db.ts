@@ -133,6 +133,13 @@ export async function ensureDatabase() {
 
         CREATE INDEX IF NOT EXISTS reviews_active_order_idx ON reviews(active, sort_order);
         CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews(status, created_at DESC);
+        CREATE TABLE IF NOT EXISTS request_deduplication (
+          scope TEXT NOT NULL,
+          token TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (scope, token)
+        );
+        CREATE INDEX IF NOT EXISTS request_deduplication_created_idx ON request_deduplication(created_at);
       `);
 
       const servicesCount = await query<{ count: string }>("SELECT COUNT(*)::text AS count FROM services");
@@ -396,6 +403,16 @@ export async function moderateReview(id: number, status: ReviewStatus, active: b
 export async function deleteReview(id: number) {
   await ensureDatabase();
   await query("DELETE FROM reviews WHERE id = $1", [id]);
+}
+
+export async function claimRequestToken(scope: string, token: string, ttlMinutes = 30) {
+  await ensureDatabase();
+  await query("DELETE FROM request_deduplication WHERE created_at < NOW() - ($1 * INTERVAL '1 minute')", [ttlMinutes]);
+  const result = await query<{ token: string }>(
+    "INSERT INTO request_deduplication (scope, token) VALUES ($1, $2) ON CONFLICT (scope, token) DO NOTHING RETURNING token",
+    [scope, token],
+  );
+  return result.rowCount === 1;
 }
 
 export async function createBooking(input: { name: string; phone: string; email?: string; service: string; preferredDate: string; notes?: string }) {

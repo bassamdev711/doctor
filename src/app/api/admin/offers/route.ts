@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { createOffer } from "@/lib/db";
 import { offerSchema } from "@/lib/validation";
+import { adminMutationGuard } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  const guard = adminMutationGuard(request, "offers-write");
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const offer = offerSchema.parse(await request.json());

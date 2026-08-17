@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { deleteReview, moderateReview, updateReview } from "@/lib/db";
 import { reviewModerationSchema, reviewSchema } from "@/lib/validation";
+import { adminMutationGuard } from "@/lib/request-security";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  const guard = adminMutationGuard(request, "reviews-moderate");
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const { id: rawId } = await context.params;
@@ -30,7 +33,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const guard = adminMutationGuard(request, "reviews-moderate", { maxBodyBytes: 8 * 1024 });
+  if (guard) return guard;
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
     const { id: rawId } = await context.params;
