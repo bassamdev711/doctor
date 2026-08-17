@@ -228,7 +228,7 @@ export default function SiteExperience() {
       </header>
 
       <section id="top" className="hero-section">
-        <div className="hero-art" aria-hidden="true" onPointerMove={handleHeroPointerMove} onPointerLeave={resetHeroPointer}><Image src="/hero-porcelain-left.png" alt="" fill priority sizes="(max-width: 900px) 100vw, 54vw" /><div className="hero-art-wash" /><div className="hero-art-label">PRECISION / 01</div><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /></div>
+        <div className="hero-art" aria-hidden="true" onPointerMove={handleHeroPointerMove} onPointerLeave={resetHeroPointer}><Image src="/hero-porcelain-left.webp" alt="" fill priority sizes="(max-width: 900px) 100vw, 54vw" /><div className="hero-art-wash" /><div className="hero-art-label">PRECISION / 01</div></div>
         <div className="hero-content page-width"><div className="hero-kicker"><span className="kicker-line" /> طب الأسنان التجميلي والترميمي</div><h1>ابتسامتك،<br /><em>بصياغة أدق.</em></h1><p className="hero-intro">نصمم علاجًا يليق بتفاصيلك — علمٌ دقيق، حضورٌ هادئ، ونتيجة تشبهك.</p><div className="hero-actions"><button className="primary-button" onClick={openBooking}>ابدأ رحلتك <ArrowIcon /></button><a className="text-button" href="#philosophy">اكتشف فلسفتنا <ArrowIcon /></a></div></div>
         <div className="hero-meta page-width"><div className="hero-note"><SparkIcon /><span>عناية تتجاوز التوقعات<br /><small>من أول استشارة</small></span></div><div className="scroll-cue"><span>مرر للاستكشاف</span><i /></div><div className="hero-stats"><strong>12</strong><span>عامًا من<br />الخبرة الهادئة</span></div></div>
       </section>
