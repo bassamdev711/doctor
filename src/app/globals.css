@@ -438,3 +438,13 @@ h1 em, h2 em { color: var(--deep-teal); font-family: var(--serif); font-style: i
 .hero-art img { transform: translate3d(var(--hero-shift-x, 0px), var(--hero-shift-y, 0px), 0) rotateY(var(--hero-tilt-x, 0deg)) rotateX(var(--hero-tilt-y, 0deg)) scale(1.045); }
 .hero-art:hover img { transform: translate3d(var(--hero-shift-x, -4px), var(--hero-shift-y, -2px), 0) rotateY(var(--hero-tilt-x, 0deg)) rotateX(var(--hero-tilt-y, 0deg)) scale(1.06); }
 .hero-art .hero-art-label { transform: translate3d(calc(var(--hero-shift-x, 0px) * -.45), calc(var(--hero-shift-y, 0px) * -.45), 22px); transition: transform 1s var(--ease-out); }
+
+
+.admin-icon { display: block; flex: none; }
+.admin-brand-symbol .admin-icon { color: var(--champagne); }
+.admin-nav button span { font-family: inherit; }
+.admin-nav button span .admin-icon { color: currentColor; }
+.admin-welcome-mark .admin-icon { color: var(--champagne); }
+.quick-actions > button > .quick-action-mark { display: grid; place-items: center; }
+.quick-actions > button > .quick-action-mark .admin-icon { color: var(--deep-teal); }
+.empty-state-mark .admin-icon { color: var(--gold); }

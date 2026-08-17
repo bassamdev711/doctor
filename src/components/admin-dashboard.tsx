@@ -22,6 +22,18 @@ type Offer = { id: number; title: string; description: string; discount_percent:
 type MediaItem = { id: number; title: string; label: string; image_url: string; sort_order: number; active: boolean };
 type DashboardData = { bookings: Booking[]; services: Service[]; offers: Offer[]; media: MediaItem[]; stats: { total: string; new_count: string; confirmed_count: string; today_count: string } };
 type Tab = "overview" | "bookings" | "services" | "offers" | "media";
+type IconName = "tooth" | "overview" | "bookings" | "services" | "offers" | "media" | "empty";
+
+function AdminIcon({ name, size = 18 }: { name: IconName; size?: number }) {
+  const common = { width: size, height: size, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.35, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className: "admin-icon", "aria-hidden": true };
+  if (name === "tooth") return <svg {...common}><path d="M5.3 3.3c-1.8 0-2.8 1.8-2.8 4.2 0 2.2 1 3.1 1.5 5.2.5 2.1 1 3.5 2 3.5 1 0 1.2-1.8 1.5-3.5.3-1.4.8-1.4 1.1 0 0.3 1.7.5 3.5 1.5 3.5s1.5-1.4 2-3.5c.5-2.1 1.5-3 1.5-5.2 0-2.4-1-4.2-2.8-4.2-1 0-1.7.5-2.5 1.1-.8-.6-1.5-1.1-2.5-1.1Z" /></svg>;
+  if (name === "overview") return <svg {...common}><path d="m3 9 7-6 7 6" /><path d="M5 8.5V17h10V8.5" /><path d="M8 17v-4h4v4" /></svg>;
+  if (name === "bookings") return <svg {...common}><rect x="3" y="4.5" width="14" height="12" rx="1.5" /><path d="M6.5 2.5v4M13.5 2.5v4M3 8.5h14M6.5 11.5h.01M10 11.5h.01M13.5 11.5h.01M6.5 14.5h.01M10 14.5h.01" /></svg>;
+  if (name === "services") return <svg {...common}><path d="M3.5 5h13M3.5 9.5h13M3.5 14h8" /><circle cx="15" cy="14" r="2" /></svg>;
+  if (name === "offers") return <svg {...common}><path d="m3.5 5.5 5-2 8 8-5 5-8-8v-3Z" /><circle cx="7" cy="7" r=".8" /></svg>;
+  if (name === "media") return <svg {...common}><rect x="3" y="4" width="14" height="12" rx="1.5" /><circle cx="7" cy="8" r="1" /><path d="m4.5 14 3.5-3 2.5 2 2-2 3 3" /></svg>;
+  return <svg {...common}><path d="M5 2.8h6l4 4V17H5z" /><path d="M11 2.8v4h4M7.5 10h5M7.5 13h5" /></svg>;
+}
 
 const emptyService = { title: "", english: "", description: "", image_url: "/hero-porcelain.jpg", sort_order: 1, active: true };
 const emptyOffer = { title: "", description: "", discount_percent: 10, valid_until: "", image_url: "/clinic-interior.jpg", sort_order: 1, active: true };
@@ -48,7 +60,7 @@ function StatusPill({ status }: { status: Booking["status"] }) {
 }
 
 function AdminBrand() {
-  return <div className="admin-brand"><span className="admin-brand-symbol" aria-hidden="true" /><span><strong>د. ليان</strong><small>لوحة العيادة</small></span></div>;
+  return <div className="admin-brand"><span className="admin-brand-symbol"><AdminIcon name="tooth" size={17} /></span><span><strong>د. ليان</strong><small>لوحة العيادة</small></span></div>;
 }
 
 export default function AdminDashboard() {
@@ -99,16 +111,16 @@ export default function AdminDashboard() {
   if (loading && !session) return <main className="admin-loading"><div className="admin-loader" /><p>نجهّز لوحة العيادة...</p></main>;
   if (!session?.authenticated) return <LoginScreen configured={session?.configured ?? false} error={error} onSuccess={(nextSession) => { setSession(nextSession); loadDashboard(); }} />;
 
-  const tabs: Array<{ id: Tab; label: string; icon: string }> = [
-    { id: "overview", label: "نظرة عامة", icon: "⌂" },
-    { id: "bookings", label: "الحجوزات", icon: "◷" },
-    { id: "services", label: "الخدمات", icon: "" },
-    { id: "offers", label: "العروض والخصومات", icon: "%" },
-    { id: "media", label: "الصور والمعرض", icon: "▧" },
+  const tabs: Array<{ id: Tab; label: string; icon: IconName }> = [
+    { id: "overview", label: "نظرة عامة", icon: "overview" },
+    { id: "bookings", label: "الحجوزات", icon: "bookings" },
+    { id: "services", label: "الخدمات", icon: "services" },
+    { id: "offers", label: "العروض والخصومات", icon: "offers" },
+    { id: "media", label: "الصور والمعرض", icon: "media" },
   ];
 
   return <main dir="rtl" className="admin-shell">
-    <aside className="admin-sidebar"><AdminBrand /><div className="admin-sidebar-label">إدارة العيادة</div><nav className="admin-nav">{tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => setActiveTab(tab.id)}><span>{tab.icon}</span>{tab.label}{tab.id === "bookings" && data && Number(data.stats.new_count) > 0 && <b>{data.stats.new_count}</b>}</button>)}</nav><div className="admin-sidebar-bottom"><Link href="/" target="_blank" rel="noreferrer">عرض الموقع ↗</Link><button onClick={logout}>تسجيل الخروج</button></div></aside>
+    <aside className="admin-sidebar"><AdminBrand /><div className="admin-sidebar-label">إدارة العيادة</div><nav className="admin-nav">{tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => setActiveTab(tab.id)}><span><AdminIcon name={tab.icon} size={16} /></span>{tab.label}{tab.id === "bookings" && data && Number(data.stats.new_count) > 0 && <b>{data.stats.new_count}</b>}</button>)}</nav><div className="admin-sidebar-bottom"><Link href="/" target="_blank" rel="noreferrer">عرض الموقع ↗</Link><button onClick={logout}>تسجيل الخروج</button></div></aside>
     <section className="admin-main"><header className="admin-topbar"><div><span className="admin-overline">إدارة عيادة د. ليان</span><h1>{tabs.find((tab) => tab.id === activeTab)?.label}</h1></div><div className="admin-top-actions"><button className="admin-refresh" onClick={loadDashboard}>تحديث البيانات ↻</button><div className="admin-avatar">د</div></div></header>{notice && <div className="admin-notice">✓ {notice}</div>}{error && <div className="admin-error">{error}</div>}
       {data && activeTab === "overview" && <Overview data={data} setActiveTab={setActiveTab} />}
       {data && activeTab === "bookings" && <Bookings data={data} reload={loadDashboard} showNotice={showNotice} />}
@@ -136,7 +148,7 @@ function LoginScreen({ configured, error, onSuccess }: { configured: boolean; er
 function Overview({ data, setActiveTab }: { data: DashboardData; setActiveTab: (tab: Tab) => void }) {
   const stats = [{ label: "إجمالي الحجوزات", value: data.stats.total, meta: "منذ بدء التشغيل", tab: "bookings" as Tab }, { label: "طلبات جديدة", value: data.stats.new_count, meta: "تحتاج إلى مراجعة", tab: "bookings" as Tab }, { label: "مواعيد مؤكدة", value: data.stats.confirmed_count, meta: "في جدول العيادة", tab: "bookings" as Tab }, { label: "مواعيد اليوم", value: data.stats.today_count, meta: "غير ملغاة", tab: "bookings" as Tab }];
   const latest = data.bookings.slice(0, 5);
-  return <div className="admin-content"><div className="admin-welcome"><div><span>صباح الخير، د. ليان</span><h2>كل ما يهم عيادتك<br /><em>في مكان واحد.</em></h2></div><div className="admin-welcome-mark" aria-hidden="true" /></div><div className="admin-stat-grid">{stats.map((stat) => <button key={stat.label} className="admin-stat-card" onClick={() => setActiveTab(stat.tab)}><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.meta} ↗</small></button>)}</div><div className="admin-two-column"><section className="admin-panel-card"><div className="panel-heading"><div><span className="panel-kicker">آخر النشاطات</span><h3>أحدث الحجوزات</h3></div><button onClick={() => setActiveTab("bookings")}>عرض الكل ←</button></div>{latest.length === 0 ? <EmptyState label="لا توجد حجوزات بعد" /> : <div className="mini-bookings">{latest.map((booking) => <div className="mini-booking" key={booking.id}><div className="mini-booking-avatar">{booking.name.slice(0, 1)}</div><div><strong>{booking.name}</strong><span>{booking.service_name} · {formatDate(booking.preferred_date)}</span></div><StatusPill status={booking.status} /></div>)}</div>}</section><section className="admin-panel-card quick-actions"><div className="panel-heading"><div><span className="panel-kicker">إدارة سريعة</span><h3>محتوى العيادة</h3></div></div><button onClick={() => setActiveTab("services")}><span className="quick-action-mark" aria-hidden="true" /><div><strong>{data.services.length} خدمات</strong><small>تعديل الخدمات ووصفها وصورها</small></div><b>←</b></button><button onClick={() => setActiveTab("offers")}><span>%</span><div><strong>{data.offers.length} عروض نشطة</strong><small>إضافة خصم أو حملة موسمية</small></div><b>←</b></button><button onClick={() => setActiveTab("media")}><span>▧</span><div><strong>{data.media.length} صور في المعرض</strong><small>تحديث صور العيادة وروابطها</small></div><b>←</b></button></section></div></div>;
+  return <div className="admin-content"><div className="admin-welcome"><div><span>صباح الخير، د. ليان</span><h2>كل ما يهم عيادتك<br /><em>في مكان واحد.</em></h2></div><div className="admin-welcome-mark"><AdminIcon name="overview" size={31} /></div></div><div className="admin-stat-grid">{stats.map((stat) => <button key={stat.label} className="admin-stat-card" onClick={() => setActiveTab(stat.tab)}><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.meta} ↗</small></button>)}</div><div className="admin-two-column"><section className="admin-panel-card"><div className="panel-heading"><div><span className="panel-kicker">آخر النشاطات</span><h3>أحدث الحجوزات</h3></div><button onClick={() => setActiveTab("bookings")}>عرض الكل ←</button></div>{latest.length === 0 ? <EmptyState label="لا توجد حجوزات بعد" /> : <div className="mini-bookings">{latest.map((booking) => <div className="mini-booking" key={booking.id}><div className="mini-booking-avatar">{booking.name.slice(0, 1)}</div><div><strong>{booking.name}</strong><span>{booking.service_name} · {formatDate(booking.preferred_date)}</span></div><StatusPill status={booking.status} /></div>)}</div>}</section><section className="admin-panel-card quick-actions"><div className="panel-heading"><div><span className="panel-kicker">إدارة سريعة</span><h3>محتوى العيادة</h3></div></div><button onClick={() => setActiveTab("services")}><span className="quick-action-mark"><AdminIcon name="services" size={16} /></span><div><strong>{data.services.length} خدمات</strong><small>تعديل الخدمات ووصفها وصورها</small></div><b>←</b></button><button onClick={() => setActiveTab("offers")}><span className="quick-action-mark"><AdminIcon name="offers" size={16} /></span><div><strong>{data.offers.length} عروض نشطة</strong><small>إضافة خصم أو حملة موسمية</small></div><b>←</b></button><button onClick={() => setActiveTab("media")}><span className="quick-action-mark"><AdminIcon name="media" size={16} /></span><div><strong>{data.media.length} صور في المعرض</strong><small>تحديث صور العيادة وروابطها</small></div><b>←</b></button></section></div></div>;
 }
 
 function Bookings({ data, reload, showNotice }: { data: DashboardData; reload: () => void; showNotice: (message: string) => void }) {
@@ -205,4 +217,4 @@ function Field({ label, value, onChange, type = "text", multiline = false, place
   return <label className="admin-field">{label}{multiline ? <textarea required value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={4} /> : <input required type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />}</label>;
 }
 
-function EmptyState({ label }: { label: string }) { return <div className="empty-state"><span className="empty-state-mark" aria-hidden="true" /><p>{label}</p></div>; }
+function EmptyState({ label }: { label: string }) { return <div className="empty-state"><span className="empty-state-mark"><AdminIcon name="empty" size={22} /></span><p>{label}</p></div>; }
