@@ -74,6 +74,10 @@ export default function SiteExperience() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
   const [beforeAfter, setBeforeAfter] = useState(52);
 
   const handleHeroPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -160,6 +164,42 @@ export default function SiteExperience() {
     setMobileOpen(false);
   };
 
+  const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setReviewSubmitting(true);
+    setReviewError("");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          author_name: formData.get("review-author"),
+          service_name: formData.get("review-service"),
+          content: formData.get("review-content"),
+          rating: Number(formData.get("review-rating")),
+          consent: formData.get("review-consent") === "on",
+        }),
+      });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "تعذر إرسال المراجعة.");
+      form.reset();
+      setReviewSubmitted(true);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "تعذر إرسال المراجعة الآن.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const openReviewForm = () => {
+    setReviewSubmitted(false);
+    setReviewError("");
+    setReviewOpen(true);
+    setMobileOpen(false);
+  };
+
   return (
     <main dir="rtl" className="site-shell">
       <header className="site-header">
@@ -188,7 +228,7 @@ export default function SiteExperience() {
 
       <section className="transformation-section section-space page-width"><SectionEyebrow index={offers.length ? "06" : "05"}>الفرق الذي يُرى ويُحس</SectionEyebrow><div className="transformation-heading"><h2>تحول محسوب.<br /><em>أثرٌ يدوم.</em></h2><p>نؤمن بأن التغيير الجميل لا يحتاج إلى مبالغة. اسحب المؤشر لترى مثالًا على توازن التفاصيل.</p></div><div className="before-after" style={{ "--split": `${beforeAfter}%` } as React.CSSProperties}><div className="ba-image ba-after"><Image src="/hero-porcelain.jpg" alt="نتيجة بعد العلاج" fill sizes="(max-width: 900px) 100vw, 80vw" /></div><div className="ba-image ba-before"><Image src="/treatment-detail.jpg" alt="الحالة قبل العلاج" fill sizes="(max-width: 900px) 100vw, 80vw" /></div><div className="ba-handle" aria-hidden="true"><span>↔</span></div><label className="sr-only" htmlFor="before-after-range">مقارنة الحالة قبل وبعد</label><input id="before-after-range" type="range" min="15" max="85" value={beforeAfter} onChange={(event) => setBeforeAfter(Number(event.target.value))} /><div className="ba-label ba-label-before">قبل</div><div className="ba-label ba-label-after">بعد</div></div></section>
 
-      {reviews.length > 0 && <section className="testimonial-section section-space"><div className="page-width testimonial-inner"><SectionEyebrow index={offers.length ? "07" : "06"}>كلمات نعتز بها</SectionEyebrow><div className="testimonial-grid">{reviews.map((review) => <article className="testimonial-card" key={review.id}><span className="testimonial-score">تقييم {review.rating}/5</span><blockquote>“{review.content}”</blockquote><div className="testimonial-meta"><span>{review.author_name}</span><span>{review.service_name}</span><span className="quote-mark" aria-hidden="true">“</span></div></article>)}</div></div></section>}
+      <section className="testimonial-section section-space"><div className="page-width testimonial-inner"><div className="testimonial-heading-row"><SectionEyebrow index={offers.length ? "07" : "06"}>كلمات نعتز بها</SectionEyebrow><button className="text-button dark-button review-cta" onClick={openReviewForm}>شارك تجربتك <ArrowIcon /></button></div>{reviews.length > 0 ? <div className="testimonial-grid">{reviews.map((review) => <article className="testimonial-card" key={review.id}><span className="testimonial-score">تقييم {review.rating}/5</span><blockquote>“{review.content}”</blockquote><div className="testimonial-meta"><span>{review.author_name}</span><span>{review.service_name}</span><span className="quote-mark" aria-hidden="true">“</span></div></article>)}</div> : <div className="testimonial-empty"><p>نرحب بتجربتك. شاركنا رأيك بعد زيارتك، وسيقوم فريق العيادة بمراجعته قبل نشره.</p><button className="outline-button" onClick={openReviewForm}>إرسال مراجعة</button></div>}</div></section>
 
       <section id="gallery" className="gallery-section section-space page-width"><SectionEyebrow index={galleryIndex}>من داخل العيادة</SectionEyebrow><div className="gallery-heading"><h2>مساحة صُممت<br /><em>لتطمئن.</em></h2><p>تفاصيل معمارية ناعمة، تقنية متقدمة، ووقت يُمنح لك بالكامل.</p></div><div className="gallery-grid">{gallery.map((item, index) => <article key={item.id} className={`gallery-item gallery-${(index % 3) + 1}`}><img src={item.src} alt={item.title} /><div className="gallery-overlay"><span>{item.label}</span><strong>{item.title}</strong></div></article>)}</div></section>
 
@@ -197,6 +237,8 @@ export default function SiteExperience() {
       <footer className="site-footer page-width"><a className="brand-mark" href="#top"><span className="brand-symbol"><span /></span><span className="brand-copy"><strong>د. ليان</strong><small>عيادة أسنان</small></span></a><div className="footer-links">{navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</div><div className="footer-contact"><span>الرياض، المملكة العربية السعودية</span><a href="mailto:hello@dr-layan.com">hello@dr-layan.com</a></div><div className="footer-bottom"><span>© 2026 عيادة د. ليان. جميع الحقوق محفوظة.</span><span>Precision meets beauty.</span></div></footer>
 
       {bookingOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setBookingOpen(false); }}><div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title"><button className="modal-close" onClick={() => setBookingOpen(false)} aria-label="إغلاق نموذج الحجز">×</button>{submitted ? <div className="success-state"><div className="success-icon">✓</div><h2>وصل طلبك.</h2><p>شكرًا لثقتك. سيتواصل معك فريق العيادة خلال ساعات العمل لتأكيد الموعد.</p><button className="primary-button" onClick={() => setBookingOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="10">حجز موعد</SectionEyebrow><h2 id="booking-title">لنبدأ<br /><em>منك.</em></h2><p className="modal-intro">املأ البيانات التالية وسنعاود الاتصال بك لتأكيد الوقت الأنسب.</p><form onSubmit={handleBooking} className="booking-form"><label>الاسم الكامل<input required name="name" placeholder="اكتب اسمك" /></label><label>رقم الهاتف<input required name="phone" type="tel" placeholder="05x xxx xxxx" /></label><label>الخدمة<select required name="service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>الوقت المفضل<input required name="date" type="date" min={new Date().toISOString().slice(0, 10)} /></label>{formError && <p className="form-error" role="alert">{formError}</p>}<button disabled={submitting} type="submit" className="primary-button form-submit">{submitting ? "جارٍ إرسال الطلب..." : "إرسال الطلب"} <ArrowIcon /></button></form></>}</div></div>}
+
+      {reviewOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setReviewOpen(false); }}><div className="booking-modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="إغلاق نموذج المراجعة">×</button>{reviewSubmitted ? <div className="success-state"><div className="success-icon">✓</div><h2>شكرًا لتجربتك.</h2><p>وصلت مراجعتك إلى فريق العيادة، وستبقى معلقة حتى يراجعها الدكتور قبل نشرها.</p><button className="primary-button" onClick={() => setReviewOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="08">مراجعة آمنة</SectionEyebrow><h2 id="review-title">رأيك<br /><em>يهمنا.</em></h2><p className="modal-intro">شارك تجربتك بصدق. لن تظهر المراجعة للزوار إلا بعد مراجعتها واعتمادها من الدكتور.</p><form onSubmit={handleReviewSubmit} className="booking-form review-form"><label>الاسم أو الأحرف الأولى<input required name="review-author" placeholder="مثال: سارة م." /></label><label>الخدمة<select required name="review-service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>تقييمك<select required name="review-rating" defaultValue="5"><option value="5">5 من 5</option><option value="4">4 من 5</option><option value="3">3 من 5</option><option value="2">2 من 5</option><option value="1">1 من 5</option></select></label><label>تجربتك<textarea required name="review-content" minLength={20} maxLength={800} rows={5} placeholder="اكتب تجربتك مع العيادة"></textarea></label><label className="consent-field"><input required type="checkbox" name="review-consent" /><span>أوافق على إرسال هذه المراجعة إلى العيادة لمراجعتها، وأفهم أنها لن تُنشر إلا بعد اعتماد الدكتور.</span></label>{reviewError && <p className="form-error" role="alert">{reviewError}</p>}<button disabled={reviewSubmitting} type="submit" className="primary-button form-submit">{reviewSubmitting ? "جارٍ إرسال المراجعة..." : "إرسال للمراجعة"} <ArrowIcon /></button></form></>}</div></div>}
     </main>
   );
 }

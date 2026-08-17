@@ -52,3 +52,15 @@ export const reviewSchema = z.object({
   sort_order: z.coerce.number().int().min(0).max(999),
   active: z.coerce.boolean(),
 });
+
+export const publicReviewSchema = z.object({
+  author_name: z.string().trim().min(2, "اكتب اسمك أو الأحرف الأولى من اسمك.").max(120),
+  content: z.string().trim().min(20, "اكتب تجربة لا تقل عن 20 حرفًا.").max(800),
+  service_name: z.string().trim().min(2, "اختر الخدمة التي تلقيتها.").max(120),
+  rating: z.coerce.number().int().min(1).max(5),
+  consent: z.literal(true, { message: "يجب تأكيد موافقتك على معالجة المراجعة." }),
+});
+
+export const reviewModerationSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]),
+});

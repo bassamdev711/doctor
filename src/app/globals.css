@@ -477,3 +477,43 @@ h1 em, h2 em { color: var(--deep-teal); font-family: var(--serif); font-style: i
   .review-admin-row { grid-template-columns: 42px minmax(0, 1fr); }
   .review-admin-row .row-actions { grid-column: 2; justify-content: flex-start; }
 }
+
+/* Public review moderation flow */
+.testimonial-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.review-cta { margin-bottom: 18px; }
+.testimonial-empty { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 28px; padding: 28px 30px; border: 1px solid rgba(34,33,31,.12); background: rgba(248,246,241,.64); }
+.testimonial-empty p { max-width: 540px; margin: 0; color: #71695f; font-size: 13px; line-height: 1.9; }
+.review-modal { max-width: 590px; }
+.review-form { gap: 14px; }
+.review-form textarea { min-height: 125px; }
+.consent-field { display: flex !important; grid-template-columns: none !important; align-items: start; gap: 10px !important; color: #766e64 !important; font-size: 10px !important; line-height: 1.75; }
+.consent-field input { flex: 0 0 auto; width: 16px !important; height: 16px; margin-top: 2px; accent-color: var(--deep-teal); }
+.review-admin-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 16px; align-items: start; padding: 22px 25px; border-bottom: 1px solid rgba(34,33,31,.08); }
+.review-admin-row:last-child { border-bottom: 0; }
+.review-admin-row.is-muted { opacity: .62; }
+.review-admin-index { display: grid; gap: 8px; color: var(--deep-teal); }
+.review-admin-index span { color: #9d8b73; font-family: var(--serif); font-size: 22px; }
+.review-admin-index b { width: fit-content; padding: 5px 7px; background: #e8e3da; color: #75654f; font-size: 9px; font-weight: 500; }
+.review-admin-copy { display: grid; gap: 6px; }
+.review-admin-copy strong { font-size: 14px; font-weight: 600; }
+.review-admin-copy small { color: #9d8b73; font-size: 10px; }
+.review-admin-copy p { margin: 5px 0 0; color: #6d675f; font-size: 12px; line-height: 1.8; }
+.review-admin-copy em { color: #4c8062; font-size: 10px; font-style: normal; }
+.review-admin-row.is-pending { border-right: 2px solid #b89564; background: rgba(244,228,201,.2); }
+.review-admin-row.is-pending .review-admin-copy em { color: #9b713c; }
+.review-status-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 7px; }
+.review-status-actions button { padding: 7px 9px; border: 1px solid rgba(34,33,31,.13); background: transparent; color: var(--deep-teal); font-size: 10px; }
+.review-status-actions .approve-review { border-color: #adcab8; background: #e4f0e8; color: #35674d; }
+.review-status-actions .reject-review { border-color: #e2b9b2; background: #f7e5e1; color: #9a5148; }
+.review-status-actions .delete-review { border: 0; color: #9a5148; }
+.review-status-label { width: fit-content; padding: 4px 7px; background: #eee9e1; color: #81796e; font-size: 9px; }
+.review-status-label.pending { background: #f4e4c9; color: #886b3c; }
+.review-status-label.approved { background: #dce9e2; color: #34644b; }
+.review-status-label.rejected { background: #f2ddda; color: #9a5148; }
+@media (max-width: 760px) {
+  .testimonial-heading-row, .testimonial-empty { align-items: start; flex-direction: column; }
+  .review-cta { margin-bottom: 0; }
+  .testimonial-empty { padding: 22px; }
+  .review-admin-row { grid-template-columns: 52px 1fr; gap: 12px; padding-inline: 16px; }
+  .review-status-actions { grid-column: 2; justify-content: start; }
+}

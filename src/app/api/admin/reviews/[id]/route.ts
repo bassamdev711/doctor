@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
-import { deleteReview, updateReview } from "@/lib/db";
-import { reviewSchema } from "@/lib/validation";
+import { deleteReview, moderateReview, updateReview } from "@/lib/db";
+import { reviewModerationSchema, reviewSchema } from "@/lib/validation";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
-    const { id } = await context.params;
-    const item = await updateReview(Number(id), reviewSchema.parse(await request.json()));
+    const { id: rawId } = await context.params;
+    const id = Number(rawId);
+    if (!Number.isInteger(id) || id < 1) return NextResponse.json({ error: "معرّف المراجعة غير صالح." }, { status: 400 });
+
+    const payload = await request.json() as Record<string, unknown>;
+    if ("status" in payload) {
+      const moderation = reviewModerationSchema.safeParse(payload);
+      if (!moderation.success) return NextResponse.json({ error: "حالة المراجعة غير صالحة." }, { status: 400 });
+      const item = await moderateReview(id, moderation.data.status, moderation.data.status === "approved");
+      if (!item) return NextResponse.json({ error: "المراجعة غير موجودة." }, { status: 404 });
+      return NextResponse.json({ item });
+    }
+
+    const parsed = reviewSchema.safeParse(payload);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "بيانات المراجعة غير صالحة." }, { status: 400 });
+    const item = await updateReview(id, parsed.data);
     if (!item) return NextResponse.json({ error: "المراجعة غير موجودة." }, { status: 404 });
     return NextResponse.json({ item });
   } catch (error) {
-    if (error instanceof Error && error.name === "ZodError") return NextResponse.json({ error: "بيانات المراجعة غير صالحة." }, { status: 400 });
     console.error("Update review error", error);
     return NextResponse.json({ error: "تعذر تحديث المراجعة." }, { status: 500 });
   }
@@ -20,8 +33,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   try {
-    const { id } = await context.params;
-    await deleteReview(Number(id));
+    const { id: rawId } = await context.params;
+    const id = Number(rawId);
+    if (!Number.isInteger(id) || id < 1) return NextResponse.json({ error: "معرّف المراجعة غير صالح." }, { status: 400 });
+    await deleteReview(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Delete review error", error);
