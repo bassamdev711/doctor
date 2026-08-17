@@ -48,7 +48,7 @@ function StatusPill({ status }: { status: Booking["status"] }) {
 }
 
 function AdminBrand() {
-  return <div className="admin-brand"><span className="admin-brand-symbol">✦</span><span><strong>د. ليان</strong><small>لوحة العيادة</small></span></div>;
+  return <div className="admin-brand"><span className="admin-brand-symbol" aria-hidden="true" /><span><strong>د. ليان</strong><small>لوحة العيادة</small></span></div>;
 }
 
 export default function AdminDashboard() {
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
   const tabs: Array<{ id: Tab; label: string; icon: string }> = [
     { id: "overview", label: "نظرة عامة", icon: "⌂" },
     { id: "bookings", label: "الحجوزات", icon: "◷" },
-    { id: "services", label: "الخدمات", icon: "✧" },
+    { id: "services", label: "الخدمات", icon: "" },
     { id: "offers", label: "العروض والخصومات", icon: "%" },
     { id: "media", label: "الصور والمعرض", icon: "▧" },
   ];
@@ -136,7 +136,7 @@ function LoginScreen({ configured, error, onSuccess }: { configured: boolean; er
 function Overview({ data, setActiveTab }: { data: DashboardData; setActiveTab: (tab: Tab) => void }) {
   const stats = [{ label: "إجمالي الحجوزات", value: data.stats.total, meta: "منذ بدء التشغيل", tab: "bookings" as Tab }, { label: "طلبات جديدة", value: data.stats.new_count, meta: "تحتاج إلى مراجعة", tab: "bookings" as Tab }, { label: "مواعيد مؤكدة", value: data.stats.confirmed_count, meta: "في جدول العيادة", tab: "bookings" as Tab }, { label: "مواعيد اليوم", value: data.stats.today_count, meta: "غير ملغاة", tab: "bookings" as Tab }];
   const latest = data.bookings.slice(0, 5);
-  return <div className="admin-content"><div className="admin-welcome"><div><span>صباح الخير، د. ليان</span><h2>كل ما يهم عيادتك<br /><em>في مكان واحد.</em></h2></div><div className="admin-welcome-mark">✦</div></div><div className="admin-stat-grid">{stats.map((stat) => <button key={stat.label} className="admin-stat-card" onClick={() => setActiveTab(stat.tab)}><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.meta} ↗</small></button>)}</div><div className="admin-two-column"><section className="admin-panel-card"><div className="panel-heading"><div><span className="panel-kicker">آخر النشاطات</span><h3>أحدث الحجوزات</h3></div><button onClick={() => setActiveTab("bookings")}>عرض الكل ←</button></div>{latest.length === 0 ? <EmptyState label="لا توجد حجوزات بعد" /> : <div className="mini-bookings">{latest.map((booking) => <div className="mini-booking" key={booking.id}><div className="mini-booking-avatar">{booking.name.slice(0, 1)}</div><div><strong>{booking.name}</strong><span>{booking.service_name} · {formatDate(booking.preferred_date)}</span></div><StatusPill status={booking.status} /></div>)}</div>}</section><section className="admin-panel-card quick-actions"><div className="panel-heading"><div><span className="panel-kicker">إدارة سريعة</span><h3>محتوى العيادة</h3></div></div><button onClick={() => setActiveTab("services")}><span>✧</span><div><strong>{data.services.length} خدمات</strong><small>تعديل الخدمات ووصفها وصورها</small></div><b>←</b></button><button onClick={() => setActiveTab("offers")}><span>%</span><div><strong>{data.offers.length} عروض نشطة</strong><small>إضافة خصم أو حملة موسمية</small></div><b>←</b></button><button onClick={() => setActiveTab("media")}><span>▧</span><div><strong>{data.media.length} صور في المعرض</strong><small>تحديث صور العيادة وروابطها</small></div><b>←</b></button></section></div></div>;
+  return <div className="admin-content"><div className="admin-welcome"><div><span>صباح الخير، د. ليان</span><h2>كل ما يهم عيادتك<br /><em>في مكان واحد.</em></h2></div><div className="admin-welcome-mark" aria-hidden="true" /></div><div className="admin-stat-grid">{stats.map((stat) => <button key={stat.label} className="admin-stat-card" onClick={() => setActiveTab(stat.tab)}><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.meta} ↗</small></button>)}</div><div className="admin-two-column"><section className="admin-panel-card"><div className="panel-heading"><div><span className="panel-kicker">آخر النشاطات</span><h3>أحدث الحجوزات</h3></div><button onClick={() => setActiveTab("bookings")}>عرض الكل ←</button></div>{latest.length === 0 ? <EmptyState label="لا توجد حجوزات بعد" /> : <div className="mini-bookings">{latest.map((booking) => <div className="mini-booking" key={booking.id}><div className="mini-booking-avatar">{booking.name.slice(0, 1)}</div><div><strong>{booking.name}</strong><span>{booking.service_name} · {formatDate(booking.preferred_date)}</span></div><StatusPill status={booking.status} /></div>)}</div>}</section><section className="admin-panel-card quick-actions"><div className="panel-heading"><div><span className="panel-kicker">إدارة سريعة</span><h3>محتوى العيادة</h3></div></div><button onClick={() => setActiveTab("services")}><span className="quick-action-mark" aria-hidden="true" /><div><strong>{data.services.length} خدمات</strong><small>تعديل الخدمات ووصفها وصورها</small></div><b>←</b></button><button onClick={() => setActiveTab("offers")}><span>%</span><div><strong>{data.offers.length} عروض نشطة</strong><small>إضافة خصم أو حملة موسمية</small></div><b>←</b></button><button onClick={() => setActiveTab("media")}><span>▧</span><div><strong>{data.media.length} صور في المعرض</strong><small>تحديث صور العيادة وروابطها</small></div><b>←</b></button></section></div></div>;
 }
 
 function Bookings({ data, reload, showNotice }: { data: DashboardData; reload: () => void; showNotice: (message: string) => void }) {
@@ -205,4 +205,4 @@ function Field({ label, value, onChange, type = "text", multiline = false, place
   return <label className="admin-field">{label}{multiline ? <textarea required value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={4} /> : <input required type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />}</label>;
 }
 
-function EmptyState({ label }: { label: string }) { return <div className="empty-state"><span>✦</span><p>{label}</p></div>; }
+function EmptyState({ label }: { label: string }) { return <div className="empty-state"><span className="empty-state-mark" aria-hidden="true" /><p>{label}</p></div>; }
