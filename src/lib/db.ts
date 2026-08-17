@@ -94,6 +94,18 @@ export async function ensureDatabase() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
 
+        CREATE TABLE IF NOT EXISTS reviews (
+          id SERIAL PRIMARY KEY,
+          author_name TEXT NOT NULL,
+          content TEXT NOT NULL,
+          service_name TEXT NOT NULL DEFAULT '',
+          rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
         CREATE TABLE IF NOT EXISTS bookings (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
@@ -112,6 +124,7 @@ export async function ensureDatabase() {
         CREATE INDEX IF NOT EXISTS bookings_preferred_date_idx ON bookings(preferred_date);
         CREATE INDEX IF NOT EXISTS services_active_order_idx ON services(active, sort_order);
         CREATE INDEX IF NOT EXISTS media_active_order_idx ON media_items(active, sort_order);
+        CREATE INDEX IF NOT EXISTS reviews_active_order_idx ON reviews(active, sort_order);
       `);
 
       const servicesCount = await query<{ count: string }>("SELECT COUNT(*)::text AS count FROM services");
@@ -182,6 +195,16 @@ export type MediaRow = {
   active: boolean;
 };
 
+export type ReviewRow = {
+  id: number;
+  author_name: string;
+  content: string;
+  service_name: string;
+  rating: number;
+  sort_order: number;
+  active: boolean;
+};
+
 export type BookingRow = {
   id: number;
   name: string;
@@ -198,21 +221,23 @@ export type BookingRow = {
 
 export async function getPublicContent() {
   await ensureDatabase();
-  const [services, offers, media] = await Promise.all([
+  const [services, offers, media, reviews] = await Promise.all([
     query<ServiceRow>("SELECT id, title, english, description, image_url, sort_order, active FROM services WHERE active = TRUE ORDER BY sort_order, id"),
     query<OfferRow>("SELECT id, title, description, discount_percent, valid_until, image_url, sort_order, active FROM offers WHERE active = TRUE AND (valid_until IS NULL OR valid_until >= CURRENT_DATE) ORDER BY sort_order, id"),
     query<MediaRow>("SELECT id, title, label, image_url, sort_order, active FROM media_items WHERE active = TRUE ORDER BY sort_order, id"),
+    query<ReviewRow>("SELECT id, author_name, content, service_name, rating, sort_order, active FROM reviews WHERE active = TRUE ORDER BY sort_order, id"),
   ]);
-  return { services: services.rows, offers: offers.rows, media: media.rows };
+  return { services: services.rows, offers: offers.rows, media: media.rows, reviews: reviews.rows };
 }
 
 export async function getAdminDashboard() {
   await ensureDatabase();
-  const [bookings, services, offers, media, stats] = await Promise.all([
+  const [bookings, services, offers, media, reviews, stats] = await Promise.all([
     query<BookingRow>("SELECT id, name, phone, email, service_id, service_name, preferred_date::text, status, notes, created_at::text, updated_at::text FROM bookings ORDER BY created_at DESC LIMIT 100"),
     query<ServiceRow>("SELECT id, title, english, description, image_url, sort_order, active FROM services ORDER BY sort_order, id"),
     query<OfferRow>("SELECT id, title, description, discount_percent, valid_until::text, image_url, sort_order, active FROM offers ORDER BY sort_order, id"),
     query<MediaRow>("SELECT id, title, label, image_url, sort_order, active FROM media_items ORDER BY sort_order, id"),
+    query<ReviewRow>("SELECT id, author_name, content, service_name, rating, sort_order, active FROM reviews ORDER BY sort_order, id"),
     query<{ total: string; new_count: string; confirmed_count: string; today_count: string }>(
       `SELECT COUNT(*)::text AS total,
         COUNT(*) FILTER (WHERE status = 'new')::text AS new_count,
@@ -226,6 +251,7 @@ export async function getAdminDashboard() {
     services: services.rows,
     offers: offers.rows,
     media: media.rows,
+    reviews: reviews.rows,
     stats: stats.rows[0] ?? { total: "0", new_count: "0", confirmed_count: "0", today_count: "0" },
   };
 }
@@ -233,6 +259,7 @@ export async function getAdminDashboard() {
 type ServiceInput = Pick<ServiceRow, "title" | "english" | "description" | "image_url" | "sort_order" | "active">;
 type OfferInput = Pick<OfferRow, "title" | "description" | "discount_percent" | "valid_until" | "image_url" | "sort_order" | "active">;
 type MediaInput = Pick<MediaRow, "title" | "label" | "image_url" | "sort_order" | "active">;
+type ReviewInput = Pick<ReviewRow, "author_name" | "content" | "service_name" | "rating" | "sort_order" | "active">;
 
 export async function createService(input: ServiceInput) {
   await ensureDatabase();
@@ -307,6 +334,31 @@ export async function updateMedia(id: number, input: MediaInput) {
 export async function deleteMedia(id: number) {
   await ensureDatabase();
   await query("DELETE FROM media_items WHERE id = $1", [id]);
+}
+
+export async function createReview(input: ReviewInput) {
+  await ensureDatabase();
+  const result = await query<ReviewRow>(
+    `INSERT INTO reviews (author_name, content, service_name, rating, sort_order, active) VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, author_name, content, service_name, rating, sort_order, active`,
+    [input.author_name, input.content, input.service_name, input.rating, input.sort_order, input.active],
+  );
+  return result.rows[0];
+}
+
+export async function updateReview(id: number, input: ReviewInput) {
+  await ensureDatabase();
+  const result = await query<ReviewRow>(
+    `UPDATE reviews SET author_name = $1, content = $2, service_name = $3, rating = $4, sort_order = $5, active = $6, updated_at = NOW()
+     WHERE id = $7 RETURNING id, author_name, content, service_name, rating, sort_order, active`,
+    [input.author_name, input.content, input.service_name, input.rating, input.sort_order, input.active, id],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function deleteReview(id: number) {
+  await ensureDatabase();
+  await query("DELETE FROM reviews WHERE id = $1", [id]);
 }
 
 export async function createBooking(input: { name: string; phone: string; email?: string; service: string; preferredDate: string; notes?: string }) {

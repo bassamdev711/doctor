@@ -30,6 +30,14 @@ type GalleryItem = {
   label: string;
 };
 
+type Review = {
+  id: number;
+  author_name: string;
+  content: string;
+  service_name: string;
+  rating: number;
+};
+
 const fallbackServices: Service[] = [
   { number: "01", title: "ابتسامة هوليود", english: "Smile design", description: "تصميم ابتسامة شخصية يوازن بين ملامح الوجه، النسب، والنتيجة الطبيعية.", image_url: "/hero-porcelain.jpg" },
   { number: "02", title: "زراعة الأسنان", english: "Implantology", description: "حلول دقيقة لاستعادة الوظيفة والثقة بخطة علاج هادئة وواضحة.", image_url: "/treatment-detail.jpg" },
@@ -59,6 +67,7 @@ export default function SiteExperience() {
   const [services, setServices] = useState<Service[]>(fallbackServices);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>(fallbackGallery);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [activeService, setActiveService] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -90,7 +99,7 @@ export default function SiteExperience() {
     fetch("/api/public/content")
       .then(async (response) => {
         if (!response.ok) throw new Error("content-unavailable");
-        return response.json() as Promise<{ services: Array<Service & { id: number }>; offers: Offer[]; media: Array<{ id: number; title: string; label: string; image_url: string }> }>;
+        return response.json() as Promise<{ services: Array<Service & { id: number }>; offers: Offer[]; media: Array<{ id: number; title: string; label: string; image_url: string }>; reviews: Review[] }>;
       })
       .then((data) => {
         if (cancelled) return;
@@ -99,12 +108,15 @@ export default function SiteExperience() {
         }
         if (data.offers) setOffers(data.offers);
         if (data.media?.length) setGallery(data.media.map((item) => ({ id: item.id, src: item.image_url, title: item.title, label: item.label })));
+        if (data.reviews) setReviews(data.reviews);
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
 
   const currentService = useMemo(() => services[Math.min(activeService, services.length - 1)] ?? fallbackServices[0], [activeService, services]);
+  const galleryIndex = offers.length ? (reviews.length ? "08" : "07") : (reviews.length ? "07" : "06");
+  const contactIndex = offers.length ? (reviews.length ? "09" : "08") : (reviews.length ? "08" : "07");
   const navigation = [
     ...(offers.length ? [{ href: "#offers", label: "العروض" }] : []),
     { href: "#philosophy", label: "فلسفتنا" },
@@ -176,11 +188,11 @@ export default function SiteExperience() {
 
       <section className="transformation-section section-space page-width"><SectionEyebrow index={offers.length ? "06" : "05"}>الفرق الذي يُرى ويُحس</SectionEyebrow><div className="transformation-heading"><h2>تحول محسوب.<br /><em>أثرٌ يدوم.</em></h2><p>نؤمن بأن التغيير الجميل لا يحتاج إلى مبالغة. اسحب المؤشر لترى مثالًا على توازن التفاصيل.</p></div><div className="before-after" style={{ "--split": `${beforeAfter}%` } as React.CSSProperties}><div className="ba-image ba-after"><Image src="/hero-porcelain.jpg" alt="نتيجة بعد العلاج" fill sizes="(max-width: 900px) 100vw, 80vw" /></div><div className="ba-image ba-before"><Image src="/treatment-detail.jpg" alt="الحالة قبل العلاج" fill sizes="(max-width: 900px) 100vw, 80vw" /></div><div className="ba-handle" aria-hidden="true"><span>↔</span></div><label className="sr-only" htmlFor="before-after-range">مقارنة الحالة قبل وبعد</label><input id="before-after-range" type="range" min="15" max="85" value={beforeAfter} onChange={(event) => setBeforeAfter(Number(event.target.value))} /><div className="ba-label ba-label-before">قبل</div><div className="ba-label ba-label-after">بعد</div></div></section>
 
-      <section className="testimonial-section section-space"><div className="page-width testimonial-inner"><SectionEyebrow index={offers.length ? "07" : "06"}>كلمات نعتز بها</SectionEyebrow><blockquote>“كنت أبحث عن نتيجة طبيعية، لكن ما حصلت عليه كان أكثر من ذلك — حصلت على راحة وثقة لم أتوقعهما.”</blockquote><div className="testimonial-meta"><span>سارة م.</span><span>تصميم ابتسامة</span><span className="quote-mark">“</span></div></div></section>
+      {reviews.length > 0 && <section className="testimonial-section section-space"><div className="page-width testimonial-inner"><SectionEyebrow index={offers.length ? "07" : "06"}>كلمات نعتز بها</SectionEyebrow><div className="testimonial-grid">{reviews.map((review) => <article className="testimonial-card" key={review.id}><span className="testimonial-score">تقييم {review.rating}/5</span><blockquote>“{review.content}”</blockquote><div className="testimonial-meta"><span>{review.author_name}</span><span>{review.service_name}</span><span className="quote-mark" aria-hidden="true">“</span></div></article>)}</div></div></section>}
 
-      <section id="gallery" className="gallery-section section-space page-width"><SectionEyebrow index={offers.length ? "08" : "07"}>من داخل العيادة</SectionEyebrow><div className="gallery-heading"><h2>مساحة صُممت<br /><em>لتطمئن.</em></h2><p>تفاصيل معمارية ناعمة، تقنية متقدمة، ووقت يُمنح لك بالكامل.</p></div><div className="gallery-grid">{gallery.map((item, index) => <article key={item.id} className={`gallery-item gallery-${(index % 3) + 1}`}><img src={item.src} alt={item.title} /><div className="gallery-overlay"><span>{item.label}</span><strong>{item.title}</strong></div></article>)}</div></section>
+      <section id="gallery" className="gallery-section section-space page-width"><SectionEyebrow index={galleryIndex}>من داخل العيادة</SectionEyebrow><div className="gallery-heading"><h2>مساحة صُممت<br /><em>لتطمئن.</em></h2><p>تفاصيل معمارية ناعمة، تقنية متقدمة، ووقت يُمنح لك بالكامل.</p></div><div className="gallery-grid">{gallery.map((item, index) => <article key={item.id} className={`gallery-item gallery-${(index % 3) + 1}`}><img src={item.src} alt={item.title} /><div className="gallery-overlay"><span>{item.label}</span><strong>{item.title}</strong></div></article>)}</div></section>
 
-      <section id="contact" className="booking-section section-space page-width"><div className="booking-card"><div><SectionEyebrow index={offers.length ? "09" : "08"}>الخطوة الأولى</SectionEyebrow><h2>لابتسامتك<br /><em>موعد يستحقها.</em></h2><p>اترك لنا تفاصيل بسيطة، وسيتواصل معك فريقنا لتنسيق استشارتك الأولى.</p></div><div className="booking-actions"><button className="light-button" onClick={openBooking}>احجز موعدًا <ArrowIcon /></button><a className="booking-phone" href="tel:+966112345678"><span>أو اتصل بنا مباشرة</span><strong>+966 11 234 5678</strong></a></div></div></section>
+      <section id="contact" className="booking-section section-space page-width"><div className="booking-card"><div><SectionEyebrow index={contactIndex}>الخطوة الأولى</SectionEyebrow><h2>لابتسامتك<br /><em>موعد يستحقها.</em></h2><p>اترك لنا تفاصيل بسيطة، وسيتواصل معك فريقنا لتنسيق استشارتك الأولى.</p></div><div className="booking-actions"><button className="light-button" onClick={openBooking}>احجز موعدًا <ArrowIcon /></button><a className="booking-phone" href="tel:+966112345678"><span>أو اتصل بنا مباشرة</span><strong>+966 11 234 5678</strong></a></div></div></section>
 
       <footer className="site-footer page-width"><a className="brand-mark" href="#top"><span className="brand-symbol"><span /></span><span className="brand-copy"><strong>د. ليان</strong><small>عيادة أسنان</small></span></a><div className="footer-links">{navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</div><div className="footer-contact"><span>الرياض، المملكة العربية السعودية</span><a href="mailto:hello@dr-layan.com">hello@dr-layan.com</a></div><div className="footer-bottom"><span>© 2026 عيادة د. ليان. جميع الحقوق محفوظة.</span><span>Precision meets beauty.</span></div></footer>
 

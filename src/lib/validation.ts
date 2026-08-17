@@ -42,3 +42,13 @@ export const bookingStatusSchema = z.object({
   status: z.enum(["new", "confirmed", "completed", "cancelled"]),
   notes: z.string().trim().max(1000).optional(),
 });
+
+
+export const reviewSchema = z.object({
+  author_name: z.string().trim().min(2).max(120),
+  content: z.string().trim().min(20).max(800),
+  service_name: z.string().trim().min(2).max(120),
+  rating: z.coerce.number().int().min(1).max(5),
+  sort_order: z.coerce.number().int().min(0).max(999),
+  active: z.coerce.boolean(),
+});
