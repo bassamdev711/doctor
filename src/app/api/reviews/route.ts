@@ -48,9 +48,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "تم استلام هذه المراجعة مسبقًا." }, { status: 409, headers: { "Cache-Control": "no-store" } });
     }
 
-    const review = await createPendingReview(reviewPayload);
-    const response = NextResponse.json({ id: review?.id, status: "pending", message: "تم استلام مراجعتك. ستظهر بعد اعتماد فريق العيادة." }, { status: 201 });
-    return applyApiSecurityHeaders(response);
+    try {
+      const review = await createPendingReview(reviewPayload);
+      const response = NextResponse.json({ id: review?.id, status: "pending", message: "تم استلام تجربتك بنجاح." }, { status: 201 });
+      return applyApiSecurityHeaders(response);
+    } catch (error) {
+      if (error instanceof Error && error.message === "REVIEW_SERVICE_NOT_FOUND") {
+        return securityError("اختر خدمة موجودة في العيادة.", 422);
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Public review submission failed", error);
     return securityError("تعذر إرسال المراجعة الآن. حاول مرة أخرى لاحقًا.", 500);

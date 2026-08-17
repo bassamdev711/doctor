@@ -49,7 +49,7 @@ export const bookingStatusSchema = z.object({
 export const reviewSchema = z.object({
   author_name: z.string().trim().min(2).max(120),
   content: z.string().trim().min(20).max(800),
-  service_name: z.string().trim().min(2).max(120),
+  service_id: z.coerce.number().int().positive("اختر خدمة فعلية.").max(2147483647),
   rating: z.coerce.number().int().min(1).max(5),
   sort_order: z.coerce.number().int().min(0).max(999),
   active: z.coerce.boolean(),
@@ -58,9 +58,9 @@ export const reviewSchema = z.object({
 export const publicReviewSchema = z.object({
   author_name: z.string().trim().min(2, "اكتب اسمك أو الأحرف الأولى من اسمك.").max(120),
   content: z.string().trim().min(20, "اكتب تجربة لا تقل عن 20 حرفًا.").max(800),
-  service_name: z.string().trim().min(2, "اختر الخدمة التي تلقيتها.").max(120),
+  service_id: z.coerce.number().int().positive("اختر الخدمة التي تلقيتها.").max(2147483647),
   rating: z.coerce.number().int().min(1).max(5),
-  consent: z.literal(true, { message: "يجب تأكيد موافقتك على معالجة المراجعة." }),
+  consent: z.literal(true, { message: "أكد موافقتك على مشاركة تجربتك مع العيادة." }),
   requestId: z.string().trim().max(120).regex(/^[a-zA-Z0-9._:-]+$/).optional(),
   website: z.string().max(0).optional(),
 });

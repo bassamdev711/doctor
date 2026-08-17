@@ -34,15 +34,16 @@ type Review = {
   id: number;
   author_name: string;
   content: string;
+  service_id: number | null;
   service_name: string;
   rating: number;
 };
 
 const fallbackServices: Service[] = [
-  { number: "01", title: "ابتسامة هوليود", english: "Smile design", description: "تصميم ابتسامة شخصية يوازن بين ملامح الوجه، النسب، والنتيجة الطبيعية.", image_url: "/hero-porcelain.jpg" },
-  { number: "02", title: "زراعة الأسنان", english: "Implantology", description: "حلول دقيقة لاستعادة الوظيفة والثقة بخطة علاج هادئة وواضحة.", image_url: "/treatment-detail.jpg" },
-  { number: "03", title: "التقويم الشفاف", english: "Clear aligners", description: "حركة محسوبة وابتسامة أكثر تناغمًا دون التنازل عن إيقاع حياتك.", image_url: "/clinic-interior.jpg" },
-  { number: "04", title: "العناية الوقائية", english: "Preventive care", description: "فحوصات وتنظيف وعادات بسيطة تحافظ على صحة ابتسامتك على المدى الطويل.", image_url: "/doctor-portrait.jpg" },
+  { id: 1, number: "01", title: "ابتسامة هوليود", english: "Smile design", description: "تصميم ابتسامة شخصية يوازن بين ملامح الوجه، النسب، والنتيجة الطبيعية.", image_url: "/hero-porcelain.jpg" },
+  { id: 2, number: "02", title: "زراعة الأسنان", english: "Implantology", description: "حلول دقيقة لاستعادة الوظيفة والثقة بخطة علاج هادئة وواضحة.", image_url: "/treatment-detail.jpg" },
+  { id: 3, number: "03", title: "التقويم الشفاف", english: "Clear aligners", description: "حركة محسوبة وابتسامة أكثر تناغمًا دون التنازل عن إيقاع حياتك.", image_url: "/clinic-interior.jpg" },
+  { id: 4, number: "04", title: "العناية الوقائية", english: "Preventive care", description: "فحوصات وتنظيف وعادات بسيطة تحافظ على صحة ابتسامتك على المدى الطويل.", image_url: "/doctor-portrait.jpg" },
 ];
 
 const fallbackGallery: GalleryItem[] = [
@@ -57,6 +58,10 @@ function ArrowIcon() {
 
 function SparkIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="spark-icon"><path d="M12 2.8c.8 5 1.8 7 6.7 8.2-4.9 1.2-5.9 3.2-6.7 8.2-.8-5-1.8-7-6.7-8.2C10.2 9.8 11.2 7.8 12 2.8Z" fill="currentColor" /></svg>;
+}
+
+function StarIcon({ filled = false }: { filled?: boolean }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className={`review-star-icon ${filled ? "is-filled" : ""}`}><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L12 3.5Z" fill="currentColor" /></svg>;
 }
 
 function SectionEyebrow({ index, children }: { index: string; children: ReactNode }) {
@@ -190,7 +195,7 @@ export default function SiteExperience() {
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": requestId },
         body: JSON.stringify({
           author_name: formData.get("review-author"),
-          service_name: formData.get("review-service"),
+          service_id: Number(formData.get("review-service-id")),
           content: formData.get("review-content"),
           rating: Number(formData.get("review-rating")),
           consent: formData.get("review-consent") === "on",
@@ -255,7 +260,7 @@ export default function SiteExperience() {
 
       {bookingOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setBookingOpen(false); }}><div className="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title"><button className="modal-close" onClick={() => setBookingOpen(false)} aria-label="إغلاق نموذج الحجز">×</button>{submitted ? <div className="success-state"><div className="success-icon">✓</div><h2>وصل طلبك.</h2><p>شكرًا لثقتك. سيتواصل معك فريق العيادة خلال ساعات العمل لتأكيد الموعد.</p><button className="primary-button" onClick={() => setBookingOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="10">حجز موعد</SectionEyebrow><h2 id="booking-title">لنبدأ<br /><em>منك.</em></h2><p className="modal-intro">املأ البيانات التالية وسنعاود الاتصال بك لتأكيد الوقت الأنسب.</p><form onSubmit={handleBooking} className="booking-form"><input className="honeypot-field" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>الاسم الكامل<input required name="name" placeholder="اكتب اسمك" /></label><label>رقم الهاتف<input required name="phone" type="tel" placeholder="05x xxx xxxx" /></label><label>الخدمة<select required name="service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>الوقت المفضل<input required name="date" type="date" min={new Date().toISOString().slice(0, 10)} /></label>{formError && <p className="form-error" role="alert">{formError}</p>}<button disabled={submitting} type="submit" className="primary-button form-submit">{submitting ? "جارٍ إرسال الطلب..." : "إرسال الطلب"} <ArrowIcon /></button></form></>}</div></div>}
 
-      {reviewOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setReviewOpen(false); }}><div className="booking-modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="إغلاق نموذج المراجعة">×</button>{reviewSubmitted ? <div className="success-state"><div className="success-icon">✓</div><h2>شكرًا لتجربتك.</h2><p>وصلت مراجعتك إلى فريق العيادة، وستبقى معلقة حتى يراجعها الدكتور قبل نشرها.</p><button className="primary-button" onClick={() => setReviewOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="08">مراجعة آمنة</SectionEyebrow><h2 id="review-title">رأيك<br /><em>يهمنا.</em></h2><p className="modal-intro">شارك تجربتك بصدق. لن تظهر المراجعة للزوار إلا بعد مراجعتها واعتمادها من الدكتور.</p><form onSubmit={handleReviewSubmit} className="booking-form review-form"><input className="honeypot-field" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>الاسم أو الأحرف الأولى<input required name="review-author" placeholder="مثال: سارة م." /></label><label>الخدمة<select required name="review-service" defaultValue=""><option value="" disabled>اختر الخدمة</option>{services.map((service) => <option key={service.id ?? service.title} value={service.title}>{service.title}</option>)}</select></label><label>تقييمك<select required name="review-rating" defaultValue="5"><option value="5">5 من 5</option><option value="4">4 من 5</option><option value="3">3 من 5</option><option value="2">2 من 5</option><option value="1">1 من 5</option></select></label><label>تجربتك<textarea required name="review-content" minLength={20} maxLength={800} rows={5} placeholder="اكتب تجربتك مع العيادة"></textarea></label><label className="consent-field"><input required type="checkbox" name="review-consent" /><span>أوافق على إرسال هذه المراجعة إلى العيادة لمراجعتها، وأفهم أنها لن تُنشر إلا بعد اعتماد الدكتور.</span></label>{reviewError && <p className="form-error" role="alert">{reviewError}</p>}<button disabled={reviewSubmitting} type="submit" className="primary-button form-submit">{reviewSubmitting ? "جارٍ إرسال المراجعة..." : "إرسال للمراجعة"} <ArrowIcon /></button></form></>}</div></div>}
+      {reviewOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setReviewOpen(false); }}><div className="booking-modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="إغلاق نموذج المراجعة">×</button>{reviewSubmitted ? <div className="success-state"><div className="success-icon">✓</div><h2>شكرًا لتجربتك.</h2><p>وصلت تجربتك بنجاح. شكرًا لمشاركتنا رأيك.</p><button className="primary-button" onClick={() => setReviewOpen(false)}>تم <ArrowIcon /></button></div> : <><SectionEyebrow index="08">مراجعة آمنة</SectionEyebrow><h2 id="review-title">رأيك<br /><em>يهمنا.</em></h2><p className="modal-intro">شاركنا تجربتك مع الخدمة التي تلقيتها، وساعد الآخرين على اتخاذ قرارهم بثقة.</p><form onSubmit={handleReviewSubmit} className="booking-form review-form"><input className="honeypot-field" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" /><label>الاسم أو الأحرف الأولى<input required name="review-author" placeholder="مثال: سارة م." /></label><label>الخدمة<select required name="review-service-id" defaultValue=""><option value="" disabled>اختر الخدمة التي تلقيتها</option>{services.map((service) => <option key={service.id ?? service.title} value={service.id ?? ""}>{service.title}</option>)}</select></label><fieldset className="review-rating-field"><legend>تقييمك</legend><div className="star-rating" role="radiogroup" aria-label="اختر تقييمك من خمس نجوم">{[5, 4, 3, 2, 1].map((value) => <label key={value} className="star-choice"><input required={value === 5} type="radio" name="review-rating" value={value} defaultChecked={value === 5} /><span title={`${value} من 5`}><StarIcon filled /></span><span className="sr-only">{value} من 5</span></label>)}</div></fieldset><label>تجربتك<textarea required name="review-content" minLength={20} maxLength={800} rows={5} placeholder="اكتب تجربتك مع العيادة"></textarea></label><label className="consent-field"><input required type="checkbox" name="review-consent" /><span>أوافق على مشاركة تجربتي مع العيادة واستخدامها ضمن محتوى الموقع.</span></label>{reviewError && <p className="form-error" role="alert">{reviewError}</p>}<button disabled={reviewSubmitting} type="submit" className="primary-button form-submit">{reviewSubmitting ? "جارٍ إرسال التقييم..." : "إرسال تقييمك"} <ArrowIcon /></button></form></>}</div></div>}
     </main>
   );
 }

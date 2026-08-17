@@ -130,8 +130,11 @@ export async function ensureDatabase() {
         ALTER TABLE reviews ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved';
         ALTER TABLE reviews ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'admin';
         ALTER TABLE reviews ADD COLUMN IF NOT EXISTS consent_at TIMESTAMPTZ;
+        ALTER TABLE reviews ADD COLUMN IF NOT EXISTS service_id INTEGER REFERENCES services(id) ON DELETE SET NULL;
+        UPDATE reviews SET service_id = services.id FROM services WHERE reviews.service_id IS NULL AND reviews.service_name = services.title;
 
         CREATE INDEX IF NOT EXISTS reviews_active_order_idx ON reviews(active, sort_order);
+        CREATE INDEX IF NOT EXISTS reviews_service_idx ON reviews(service_id);
         CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews(status, created_at DESC);
         CREATE TABLE IF NOT EXISTS request_deduplication (
           scope TEXT NOT NULL,
@@ -217,6 +220,7 @@ export type ReviewRow = {
   author_name: string;
   content: string;
   service_name: string;
+  service_id: number | null;
   rating: number;
   sort_order: number;
   active: boolean;
@@ -246,7 +250,7 @@ export async function getPublicContent() {
     query<ServiceRow>("SELECT id, title, english, description, image_url, sort_order, active FROM services WHERE active = TRUE ORDER BY sort_order, id"),
     query<OfferRow>("SELECT id, title, description, discount_percent, valid_until, image_url, sort_order, active FROM offers WHERE active = TRUE AND (valid_until IS NULL OR valid_until >= CURRENT_DATE) ORDER BY sort_order, id"),
     query<MediaRow>("SELECT id, title, label, image_url, sort_order, active FROM media_items WHERE active = TRUE ORDER BY sort_order, id"),
-    query<ReviewRow>("SELECT id, author_name, content, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text FROM reviews WHERE active = TRUE AND status = 'approved' ORDER BY sort_order, id"),
+    query<ReviewRow>("SELECT id, author_name, content, service_name, service_id, rating, sort_order, active, status, source, consent_at::text, created_at::text FROM reviews WHERE active = TRUE AND status = 'approved' ORDER BY sort_order, id"),
   ]);
   return { services: services.rows, offers: offers.rows, media: media.rows, reviews: reviews.rows };
 }
@@ -258,7 +262,7 @@ export async function getAdminDashboard() {
     query<ServiceRow>("SELECT id, title, english, description, image_url, sort_order, active FROM services ORDER BY sort_order, id"),
     query<OfferRow>("SELECT id, title, description, discount_percent, valid_until::text, image_url, sort_order, active FROM offers ORDER BY sort_order, id"),
     query<MediaRow>("SELECT id, title, label, image_url, sort_order, active FROM media_items ORDER BY sort_order, id"),
-    query<ReviewRow>("SELECT id, author_name, content, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text FROM reviews ORDER BY CASE WHEN status = 'pending' THEN 0 WHEN status = 'approved' THEN 1 ELSE 2 END, sort_order, id"),
+    query<ReviewRow>("SELECT id, author_name, content, service_name, service_id, rating, sort_order, active, status, source, consent_at::text, created_at::text FROM reviews ORDER BY CASE WHEN status = 'pending' THEN 0 WHEN status = 'approved' THEN 1 ELSE 2 END, sort_order, id"),
     query<{ total: string; new_count: string; confirmed_count: string; today_count: string; pending_reviews_count: string }>(
       `SELECT COUNT(*)::text AS total,
         COUNT(*) FILTER (WHERE status = 'new')::text AS new_count,
@@ -281,7 +285,7 @@ export async function getAdminDashboard() {
 type ServiceInput = Pick<ServiceRow, "title" | "english" | "description" | "image_url" | "sort_order" | "active">;
 type OfferInput = Pick<OfferRow, "title" | "description" | "discount_percent" | "valid_until" | "image_url" | "sort_order" | "active">;
 type MediaInput = Pick<MediaRow, "title" | "label" | "image_url" | "sort_order" | "active">;
-type ReviewInput = Pick<ReviewRow, "author_name" | "content" | "service_name" | "rating" | "sort_order" | "active">;
+type ReviewInput = Pick<ReviewRow, "author_name" | "content" | "rating" | "sort_order" | "active"> & { service_id: number };
 
 export async function createService(input: ServiceInput) {
   await ensureDatabase();
@@ -358,34 +362,46 @@ export async function deleteMedia(id: number) {
   await query("DELETE FROM media_items WHERE id = $1", [id]);
 }
 
-export async function createReview(input: ReviewInput) {
+export async function getReviewService(serviceId: number, activeOnly = false) {
   await ensureDatabase();
+  const result = await query<{ id: number; title: string; active: boolean }>(
+    `SELECT id, title, active FROM services WHERE id = $1 ${activeOnly ? "AND active = TRUE" : ""} LIMIT 1`,
+    [serviceId],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function createReview(input: ReviewInput) {
+  const service = await getReviewService(input.service_id);
+  if (!service) throw new Error("REVIEW_SERVICE_NOT_FOUND");
   const result = await query<ReviewRow>(
-    `INSERT INTO reviews (author_name, content, service_name, rating, sort_order, active, status, source)
-     VALUES ($1, $2, $3, $4, $5, $6, 'approved', 'admin')
-     RETURNING id, author_name, content, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
-    [input.author_name, input.content, input.service_name, input.rating, input.sort_order, input.active],
+    `INSERT INTO reviews (author_name, content, service_id, service_name, rating, sort_order, active, status, source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'approved', 'admin')
+     RETURNING id, author_name, content, service_id, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
+    [input.author_name, input.content, service.id, service.title, input.rating, input.sort_order, input.active],
   );
   return result.rows[0];
 }
 
-export async function createPendingReview(input: { author_name: string; content: string; service_name: string; rating: number }) {
-  await ensureDatabase();
+export async function createPendingReview(input: { author_name: string; content: string; service_id: number; rating: number }) {
+  const service = await getReviewService(input.service_id, true);
+  if (!service) throw new Error("REVIEW_SERVICE_NOT_FOUND");
   const result = await query<Pick<ReviewRow, "id" | "status">>(
-    `INSERT INTO reviews (author_name, content, service_name, rating, sort_order, active, status, source, consent_at)
-     VALUES ($1, $2, $3, $4, 0, FALSE, 'pending', 'public', NOW())
+    `INSERT INTO reviews (author_name, content, service_id, service_name, rating, sort_order, active, status, source, consent_at)
+     VALUES ($1, $2, $3, $4, $5, 0, FALSE, 'pending', 'public', NOW())
      RETURNING id, status`,
-    [input.author_name, input.content, input.service_name, input.rating],
+    [input.author_name, input.content, service.id, service.title, input.rating],
   );
   return result.rows[0];
 }
 
 export async function updateReview(id: number, input: ReviewInput) {
-  await ensureDatabase();
+  const service = await getReviewService(input.service_id);
+  if (!service) throw new Error("REVIEW_SERVICE_NOT_FOUND");
   const result = await query<ReviewRow>(
-    `UPDATE reviews SET author_name = $1, content = $2, service_name = $3, rating = $4, sort_order = $5, active = $6, updated_at = NOW()
-     WHERE id = $7 RETURNING id, author_name, content, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
-    [input.author_name, input.content, input.service_name, input.rating, input.sort_order, input.active, id],
+    `UPDATE reviews SET author_name = $1, content = $2, service_id = $3, service_name = $4, rating = $5, sort_order = $6, active = $7, updated_at = NOW()
+     WHERE id = $8 RETURNING id, author_name, content, service_id, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
+    [input.author_name, input.content, service.id, service.title, input.rating, input.sort_order, input.active, id],
   );
   return result.rows[0] ?? null;
 }
@@ -394,7 +410,7 @@ export async function moderateReview(id: number, status: ReviewStatus, active: b
   await ensureDatabase();
   const result = await query<ReviewRow>(
     `UPDATE reviews SET status = $1, active = $2, updated_at = NOW()
-     WHERE id = $3 RETURNING id, author_name, content, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
+     WHERE id = $3 RETURNING id, author_name, content, service_id, service_name, rating, sort_order, active, status, source, consent_at::text, created_at::text`,
     [status, active, id],
   );
   return result.rows[0] ?? null;
