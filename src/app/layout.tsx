@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description: "عيادة د. ليان لطب الأسنان التجميلي والترميمي في الرياض. عناية هادئة، تخطيط رقمي، ونتائج طبيعية مصممة حولك.",
   keywords: ["طبيب أسنان الرياض", "تجميل الأسنان", "ابتسامة هوليود", "زراعة الأسنان", "تقويم شفاف"],
   alternates: { canonical: "/" },
+  icons: {
+    icon: [{ url: "/ceramic-molar-icon.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/ceramic-molar-icon.png", type: "image/png", sizes: "512x512" }],
+  },
   openGraph: {
     title: "د. ليان | طب أسنان دقيق، ابتسامة تشبهك",
     description: "عناية هادئة ونتائج طبيعية في عيادة د. ليان بالرياض.",
@@ -17,9 +21,9 @@ export const metadata: Metadata = {
     siteName: "عيادة د. ليان",
     locale: "ar_SA",
     type: "website",
-    images: [{ url: "/hero-porcelain-left.png", width: 2560, height: 1440, alt: "تفصيل خزفي مستوحى من طب الأسنان" }],
+    images: [{ url: "/og-dental-clinic.jpg", width: 1600, height: 900, alt: "ضرس خزفي بتصميم هادئ لعيادة د. ليان" }],
   },
-  twitter: { card: "summary_large_image", title: "د. ليان | طب أسنان دقيق، ابتسامة تشبهك", description: "عناية هادئة ونتائج طبيعية في عيادة د. ليان بالرياض.", images: ["/hero-porcelain-left.png"] },
+  twitter: { card: "summary_large_image", title: "د. ليان | طب أسنان دقيق، ابتسامة تشبهك", description: "عناية هادئة ونتائج طبيعية في عيادة د. ليان بالرياض.", images: ["/og-dental-clinic.jpg"] },
   robots: { index: true, follow: true },
 };
 
@@ -32,7 +36,7 @@ const structuredData = {
   telephone: "+966112345678",
   address: { "@type": "PostalAddress", addressLocality: "الرياض", addressCountry: "SA" },
   medicalSpecialty: "Dentistry",
-  image: "https://dr-layan.com/hero-porcelain-left.png",
+  image: "https://dr-layan.com/og-dental-clinic.jpg",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
