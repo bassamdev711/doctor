@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 type Service = {
   id?: number;
@@ -66,6 +66,24 @@ export default function SiteExperience() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [beforeAfter, setBeforeAfter] = useState(52);
+
+  const handleHeroPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    event.currentTarget.style.setProperty("--hero-tilt-x", `${(x * 3.2).toFixed(2)}deg`);
+    event.currentTarget.style.setProperty("--hero-tilt-y", `${(y * -2.2).toFixed(2)}deg`);
+    event.currentTarget.style.setProperty("--hero-shift-x", `${(x * -9).toFixed(2)}px`);
+    event.currentTarget.style.setProperty("--hero-shift-y", `${(y * -6).toFixed(2)}px`);
+  };
+
+  const resetHeroPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.currentTarget.style.setProperty("--hero-tilt-x", "0deg");
+    event.currentTarget.style.setProperty("--hero-tilt-y", "0deg");
+    event.currentTarget.style.setProperty("--hero-shift-x", "0px");
+    event.currentTarget.style.setProperty("--hero-shift-y", "0px");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -141,7 +159,7 @@ export default function SiteExperience() {
       </header>
 
       <section id="top" className="hero-section">
-        <div className="hero-art" aria-hidden="true"><Image src="/hero-porcelain.jpg" alt="" fill priority sizes="(max-width: 900px) 100vw, 54vw" /><div className="hero-art-wash" /><div className="hero-art-label">PRECISION / 01</div><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /></div>
+        <div className="hero-art" aria-hidden="true" onPointerMove={handleHeroPointerMove} onPointerLeave={resetHeroPointer}><Image src="/hero-porcelain.jpg" alt="" fill priority sizes="(max-width: 900px) 100vw, 54vw" /><div className="hero-art-wash" /><div className="hero-art-label">PRECISION / 01</div><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /></div>
         <div className="hero-content page-width"><div className="hero-kicker"><span className="kicker-line" /> طب الأسنان التجميلي والترميمي</div><h1>ابتسامتك،<br /><em>بصياغة أدق.</em></h1><p className="hero-intro">نصمم علاجًا يليق بتفاصيلك — علمٌ دقيق، حضورٌ هادئ، ونتيجة تشبهك.</p><div className="hero-actions"><button className="primary-button" onClick={openBooking}>ابدأ رحلتك <ArrowIcon /></button><a className="text-button" href="#philosophy">اكتشف فلسفتنا <ArrowIcon /></a></div></div>
         <div className="hero-meta page-width"><div className="hero-note"><SparkIcon /><span>عناية تتجاوز التوقعات<br /><small>من أول استشارة</small></span></div><div className="scroll-cue"><span>مرر للاستكشاف</span><i /></div><div className="hero-stats"><strong>12</strong><span>عامًا من<br />الخبرة الهادئة</span></div></div>
       </section>
