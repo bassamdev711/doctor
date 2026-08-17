@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     try {
       const review = await createPendingReview(reviewPayload);
-      const response = NextResponse.json({ id: review?.id, status: "pending", message: "تم استلام تجربتك بنجاح." }, { status: 201 });
+      const response = NextResponse.json({ id: review?.id, message: "تم استلام تجربتك بنجاح." }, { status: 201 });
       return applyApiSecurityHeaders(response);
     } catch (error) {
       if (error instanceof Error && error.message === "REVIEW_SERVICE_NOT_FOUND") {
